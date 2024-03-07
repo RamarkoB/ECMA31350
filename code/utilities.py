@@ -233,7 +233,7 @@ def plot_trends(df, outcome, ranges=None):
     )
 
     ax = plot_with_error_bars(annual_change)
-    xticks = range(min(ranges), max(ranges), 2)
+    xticks = range(min(ranges), max(ranges) + 1, 2)
     plt.xticks(xticks, [INT_TO_QUARTER[i] for i in xticks])
     sns.despine()
     plt.ylabel(f"Average {outcome}")
