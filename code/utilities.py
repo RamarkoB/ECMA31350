@@ -4,21 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-QUARTER_TO_INT = {
-    '2015-03-31 00:00:00+00:00': 1,
-    '2015-06-30 00:00:00+00:00': 2,
-    '2015-09-30 00:00:00+00:00': 3,
-    '2015-12-31 00:00:00+00:00': 4,
-    '2016-03-31 00:00:00+00:00': 5,
-    '2016-06-30 00:00:00+00:00': 6,
-    '2016-09-30 00:00:00+00:00': 7,
-    '2016-12-31 00:00:00+00:00': 8,
-    '2017-03-31 00:00:00+00:00': 9,
-    '2017-06-30 00:00:00+00:00': 10,
-    '2017-09-30 00:00:00+00:00': 11,
-    '2017-12-31 00:00:00+00:00': 12,
-}
-
 INT_TO_QUARTER = {
     1: '2015 Q1',
     2: '2015 Q2',
@@ -54,20 +39,12 @@ def get_first_treat(repo, treatment):
         return 0
 
     dt = pd.to_datetime(ts_str)
-    keys = list(QUARTER_TO_INT.keys())
-
-    if dt <= pd.to_datetime('2016-03-31'):
-        return 5
-
-    for date in keys:
-        if dt <= pd.to_datetime(date).tz_localize(None):
-            return QUARTER_TO_INT[date]
-        
-    raise ValueError("Date out of range")
+    treat_time = dt.quarter + (dt.year - 2015) * 4
+    return 5 if treat_time <= 5 else treat_time
 
 
 def load_data(treat_func=None, quarter_range=None, outliers=None, level=0.95):
-    df = pd.read_csv("../githubData.csv").drop(columns='Unnamed: 0')
+    df = pd.read_csv("../githubData.csv").drop(columns=['Unnamed: 0', 'quarter'])
 
     with open('../data/repo-names.json') as f:
         repos = json.load(f)
@@ -89,9 +66,8 @@ def load_data(treat_func=None, quarter_range=None, outliers=None, level=0.95):
     df['ttc_h'] = df['ttc_s'] / 3600
     df['ttc_d'] = df['ttc_s'] / 86400
 
-
     df['repo'] = df['repository_url'].str.replace("https://api.github.com/repos/", "", regex=True).str.lower()
-    df['time'] = df['quarter'].map(QUARTER_TO_INT)
+    df['time'] = df['opened'].dt.quarter + (df['opened'].dt.year - 2015) * 4
     df = df[df['repo'].isin(repos)]
 
     first_treat_dict = {}
