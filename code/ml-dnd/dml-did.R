@@ -1,3 +1,5 @@
+# From Chang (2020): https://github.com/NengChiehChang/Diff-in-Diff/blob/master/RO_Algorithm.R
+
 #The function DMLDiD returns the DMLDiD estimator and its estimated variance. 
 #Data is randomly splitted into K=2 parts.
 #To obtain a robust result, I repeat B=100 times and return the average of the 100 DMLDiD estimators. 
@@ -13,8 +15,8 @@ library(glmnet)
 library(randomForest)
 
 #Algorithm
-
 DMLDiD=function(Y1,Y0,D,p){
+  X=p
   N=length(Y1)
   B=100
   set.seed(123)
@@ -136,18 +138,18 @@ DMLDiD=function(Y1,Y0,D,p){
   return(c(finaltheta,sd))
 }
 
-## load in data
-df = read.csv(here("data", "did-data-wide.csv"))[-1,]
+chang_did <- function(df) {
+  # covs = c("age", "size", "watchers", "lang", "forks", "license", "has_wiki", "y0_1", "y0_2", "y0_3", "y0_4")
+  Y1 = df$ttc_d1
+  Y0 = df$ttc_d0
+  D = df$treat
+  # X = as.matrix(cbind(df$ttc_d0, df$age, df$size, df$watchers))
+  X = as.matrix(cbind(df$ttc_d0, df$age))
+  
+  results = DMLDiD(Y1,Y0,D,X)
+  est = results[1]
+  se = results[2]
+  
+  print(paste("est:", est, "se:", se, "pval:", 2 * pnorm(est / se)))
+}
 
-# covs = c("age", "size", "watchers", "lang", "forks", "license", "has_wiki", "y0_1", "y0_2", "y0_3", "y0_4")
-Y1 = df$ttc_d1
-Y0 = df$ttc_d0
-D = df$treat
-# X = as.matrix(cbind(df$ttc_d0, df$age, df$size, df$watchers))
-X = as.matrix(cbind(df$ttc_d0, df$age))
-
-results = DMLDiD(Y1,Y0,D,X)
-est = results[1]
-se = results[2]
-
-print(paste("est:", est, "se:", se, "pval:", 2 * pnorm(est / se)))

@@ -1,5 +1,9 @@
-# lots of treatment files
+.DS_Store
+
+# big data files
 data/treatments
+data/mainGithubData.csv
+data/issue-history
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
