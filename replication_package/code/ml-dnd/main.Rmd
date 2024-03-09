@@ -1,0 +1,86 @@
+---
+title: "main"
+author: "David Xue"
+date: "3/8/2024"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+rm(list = ls())
+library(dplyr)
+library(here)
+library(ggplot2)
+```
+
+```{r}
+library(here)
+here::i_am("code/ml-dnd/main.Rmd")
+source(here("code", "ml-dnd", "twfe.R"))
+source(here("code", "ml-dnd", "sc-did.R"))
+source(here("code", "ml-dnd", "dml-did.R"))
+```
+
+```{r}
+df = read.csv(here("data", "did-data.csv"))
+```
+
+```{r}
+## Agged TWFE
+lr = agg_twfe(df)
+coef(summary(lr))['treated', ]
+```
+
+
+```{r}
+# TWFE
+coefs_twfe = run_twfe(df, output=F)
+check_twfe_pretrends(df)
+```
+
+```{r}
+# Specification (2)
+coefs_2 = sc_did_2(df)
+```
+
+```{r}
+# Specification (3)
+coefs_3 = sc_did_3(df)
+```
+
+```{r}
+# Specification (4)
+df_wide = read.csv(here("data", "did-data-wide.csv"))
+chang_did(df_wide)
+```
+
+
+```{r}
+# Specification (5)
+source(here("code", "ml-dnd", "sc-did.R"))
+res_5 = sc_xgboost(df)
+coefs_5 = res_5[[1]]
+attgt_xgboost = res_5[[2]]
+```
+
+```{r}
+plotdf = rbind(coefs_twfe, coefs_2, coefs_3, coefs_5)
+# jitter years a little
+plotdf[plotdf$label == "Spec (1)", "year"] = plotdf[plotdf$label == "Spec (1)", "year"] - 0.21
+plotdf[plotdf$label == "Spec (2)", "year"] = plotdf[plotdf$label == "Spec (2)", "year"] - 0.07
+plotdf[plotdf$label == "Spec (3)", "year"] = plotdf[plotdf$label == "Spec (3)", "year"] + 0.07
+plotdf[plotdf$label == "Spec (5)", "year"] = plotdf[plotdf$label == "Spec (5)", "year"] + 0.21
+
+ggplot(data = plotdf, aes(x = year, y = coef, color = label)) +
+  geom_hline(aes(yintercept = 0), linetype = "dotted") +
+  geom_vline(aes(xintercept = 4), linetype = "dotted") + 
+  geom_point() +
+  geom_errorbar(aes(ymin = cilb, ymax = ciub)) +
+  geom_label(label = "base \n period", x = 4, y = 0, show.legend=FALSE, color="grey50") +
+  ylim(1.1 * min(plotdf$cilb), 1.1 * max(plotdf$ciub)) +
+  scale_x_continuous(breaks = 1:9, 
+                     labels = c("2015 Q1", "2015 Q2", "2015 Q3", "2015 Q4",
+                                "2016 Q1", "2016 Q2", "2016 Q3", "2016 Q4", "2017 Q1")) +
+  labs(x = "Quarter", y = "Coefficient on interaction") +
+  ggtitle("Event Study, Outcome: TTC, Unbounded")
+```
+
